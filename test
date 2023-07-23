@@ -1,0 +1,30 @@
+define start 	(var a: integer) (* lol i am the god *)
+constants
+lol = 1
+d = 3
+variables (* should variable used as a reference variable? *)
+b,c : integer
+begin 
+	write lol, d
+	read var ok
+	write ok, lol, d
+	integerToReal 6, var mn
+	write mn
+	realToInteger 8.4, var mn
+	write mn
+	squareRoot 3, var s
+	write s
+	getRandom var g
+	write g
+	second var jojo
+	write jojo
+end(* kanye west the boy*)
+define second (var jojo: integer)
+constants
+lol = 1
+d = 3
+variables
+b,c : integer
+begin
+	read var jojo
+end

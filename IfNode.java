@@ -24,6 +24,10 @@ public class IfNode extends StatementNode{
 		return this.booleanExpressionNode;
 	}
 	
+	public ArrayList<StatementNode> getIfstatements(){
+		return this.statements;
+	}
+	
 	@Override
 	public String toString() {
 		String result = super.toString() + this.booleanExpressionNode + "\n\t\tStatements:";

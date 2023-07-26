@@ -178,11 +178,12 @@ public class Parser {
 	private ArrayList<Node> processVariables() throws Exception{
 		ArrayList<Node> variableNode = new ArrayList<>();
 		ArrayList<String> variableName = new ArrayList<>();
-		Token identifier;
+		Token identifier = this.matchAndRemove(TokenType.IDENTIFIER);
 		do {
-			while((identifier = this.matchAndRemove(TokenType.IDENTIFIER)) != null) {
+			while(identifier != null) {
 				variableName.add(identifier.getValue());
 				if(this.matchAndRemove(TokenType.COMMA) != null) {
+					identifier = this.matchAndRemove(TokenType.IDENTIFIER);
 					continue;
 				}else if(this.matchAndRemove(TokenType.COLON) != null) {
 					break;
@@ -199,13 +200,14 @@ public class Parser {
 					variableNode.add(new VariableNode(name, new RealNode()));
 				}
 			}else {
-				throw new Exception("variable data type declaration invalid");
+				throw new Exception("variable data type declaration invalid " + this.tokens.get(0));
 			}
 			if(this.matchAndRemove(TokenType.EndOfLine) != null) {
 				identifier = this.matchAndRemove(TokenType.IDENTIFIER);
 			}else {
 				throw new Exception("need to start on a new line for another variable declaratino or body function");
 			}
+			variableName.clear();
 		}while(identifier != null);
 		
 		return variableNode;

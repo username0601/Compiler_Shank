@@ -12,6 +12,18 @@ public class BooleanExpressionNode extends Node{
 		this.condition = condition;
 	}
 	
+	public Node getLeftExpression() {
+		return this.leftExpression;
+	}
+	
+	public Node getRightExpression() {
+		return this.rightExpression;
+	}
+	
+	public String getCondtion() {
+		return this.condition;
+	}
+	
 	@Override
 	public String toString() {
 		return "Condition: " + this.leftExpression + " " + this.condition + " " + this.rightExpression;

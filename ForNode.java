@@ -17,6 +17,21 @@ public class ForNode extends StatementNode{
 		this.statements = statements;
 	}
 	
+	public VariableReferenceNode getVariableReferenceNode() {
+		return this.variableReferenceNode;
+	}
+	
+	public Node getStartNode() {
+		return this.startNode;
+	}
+	
+	public Node getEndNode() {
+		return this.endNode;
+	}
+	
+	public ArrayList<StatementNode> getForStatements(){
+		return this.statements;
+	}
 	
 	@Override
 	public String toString() {

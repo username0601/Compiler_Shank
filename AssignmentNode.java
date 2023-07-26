@@ -11,6 +11,14 @@ public class AssignmentNode extends StatementNode{
 		this.expressionNode = expressionNode;
 	}
 	
+	public VariableReferenceNode getLeft() {
+		return this.variableReferenceNode;
+	}
+	
+	public Node getRight() {
+		return this.expressionNode;
+	}
+	
 	@Override
 	public String toString() {
 		return super.toString() + this.variableReferenceNode + "\n\t\tAssigns to\n\t\t" + this.expressionNode + "\n";

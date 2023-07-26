@@ -13,6 +13,14 @@ public class RepeatNode extends StatementNode{
 		this.statements = statements;
 	}
 	
+	public BooleanExpressionNode getBoolean() {
+		return this.booleanExrpessionNode;
+	}
+	
+	public ArrayList<StatementNode> getRepeatStatements(){
+		return this.statements;
+	}
+
 	@Override
 	public String toString() {
 		String result = super.toString() + "Statements:";

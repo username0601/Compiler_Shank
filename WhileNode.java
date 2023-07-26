@@ -13,6 +13,14 @@ public class WhileNode extends StatementNode{
 		this.statements = statements;
 	}
 	
+	public BooleanExpressionNode getBoolean() {
+		return this.booleanExpressionNode;
+	}
+	
+	public ArrayList<StatementNode> getWhileStatements(){
+		return this.statements;
+	}
+	
 	@Override
 	public String toString() {
 		String result = super.toString() + this.booleanExpressionNode + "\n\t\tStatements:";

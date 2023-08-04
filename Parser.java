@@ -84,6 +84,18 @@ public class Parser {
 					for(String name: variableName) {
 						variableNode.add(new VariableReferenceNode(name, new RealNode()));
 					}
+				}else if(this.matchAndRemove(TokenType.BOOL) != null) {
+					for(String name: variableName) {
+						variableNode.add(new VariableNode(name, new BoolNode()));
+					}
+				}else if(this.matchAndRemove(TokenType.CHAR) != null) {
+					for(String name: variableName) {
+						variableNode.add(new VariableNode(name, new CharNode()));
+					}
+				}else if(this.matchAndRemove(TokenType.STRING) != null) {
+					for(String name: variableName) {
+						variableNode.add(new VariableNode(name, new StringNode()));
+					}
 				}else {
 					throw new Exception("variable data type declaration invalid " + this.tokens.get(0) + " " + variableName);
 				}
@@ -108,6 +120,18 @@ public class Parser {
 				}else if(this.matchAndRemove(TokenType.REAL) != null) {
 					for(String name: variableName) {
 						variableNode.add(new VariableNode(name, new RealNode()));
+					}
+				}else if(this.matchAndRemove(TokenType.BOOL) != null) {
+					for(String name: variableName) {
+						variableNode.add(new VariableNode(name, new BoolNode()));
+					}
+				}else if(this.matchAndRemove(TokenType.CHAR) != null) {
+					for(String name: variableName) {
+						variableNode.add(new VariableNode(name, new CharNode()));
+					}
+				}else if(this.matchAndRemove(TokenType.STRING) != null) {
+					for(String name: variableName) {
+						variableNode.add(new VariableNode(name, new StringNode()));
 					}
 				}else {
 					throw new Exception("variable data type declaration invalid " + this.tokens.get(0) + " " + variableName);
@@ -150,8 +174,17 @@ public class Parser {
 						constantNode.add(new VariableNode(constantName, new IntNode(Integer.parseInt(token.getValue())), true));
 					}
 					this.matchAndRemove(TokenType.EndOfLine);
-				}else {
-					throw new Exception("number need to follow after the equal");
+				}else if((token = this.matchAndRemove(TokenType.TRUE)) != null)  {
+					constantNode.add(new VariableNode(constantName, new BoolNode(true), true));
+				}else if((token = this.matchAndRemove(TokenType.FALSE)) != null)  {
+					constantNode.add(new VariableNode(constantName, new BoolNode(false), true));
+				}else if((token = this.matchAndRemove(TokenType.CHAR)) != null)  {
+					constantNode.add(new VariableNode(constantName, new CharNode(token.getValue()), true));
+				}else if((token = this.matchAndRemove(TokenType.STRING)) != null)  {
+					constantNode.add(new VariableNode(constantName, new StringNode(token.getValue()), true));
+				}
+				else {
+					throw new Exception("Parser error: constant initialization invalid");
 				}
 			}else {
 				throw new Exception("single equal character need to follow after the identifier");
@@ -198,6 +231,18 @@ public class Parser {
 			}else if(this.matchAndRemove(TokenType.REAL) != null) {
 				for(String name: variableName) {
 					variableNode.add(new VariableNode(name, new RealNode()));
+				}
+			}else if(this.matchAndRemove(TokenType.BOOL) != null) {
+				for(String name: variableName) {
+					variableNode.add(new VariableNode(name, new BoolNode()));
+				}
+			}else if(this.matchAndRemove(TokenType.CHAR) != null) {
+				for(String name: variableName) {
+					variableNode.add(new VariableNode(name, new CharNode()));
+				}
+			}else if(this.matchAndRemove(TokenType.STRING) != null) {
+				for(String name: variableName) {
+					variableNode.add(new VariableNode(name, new StringNode()));
 				}
 			}else {
 				throw new Exception("variable data type declaration invalid " + this.tokens.get(0));
@@ -268,7 +313,11 @@ public class Parser {
 		ArrayList<Node> parameters = new ArrayList<>();
 		while(this.tokens.get(0).getTokenType() == TokenType.VAR ||
 				this.tokens.get(0).getTokenType() == TokenType.IDENTIFIER || 
-				this.tokens.get(0).getTokenType() == TokenType.NUMBER) {
+				this.tokens.get(0).getTokenType() == TokenType.NUMBER || 
+				this.tokens.get(0).getTokenType() == TokenType.TRUE ||
+				this.tokens.get(0).getTokenType() == TokenType.FALSE ||
+				this.tokens.get(0).getTokenType() == TokenType.CHARCONTENT ||
+				this.tokens.get(0).getTokenType() == TokenType.STRINGCONTENT ) {
 			// identifier for passing by reference variable or passing by value variable
 			Token token;
 			if(this.matchAndRemove(TokenType.VAR) != null) {
@@ -281,13 +330,21 @@ public class Parser {
 			// the identifier is a passing by value variable which could be variable or constant
 			else if((token = this.matchAndRemove(TokenType.IDENTIFIER)) != null) {
 				parameters.add(new VariableNode(token.getValue()));
-			}else {
-				String value = this.matchAndRemove(TokenType.NUMBER).getValue();
+			}else if((token = this.matchAndRemove(TokenType.NUMBER)) != null){
+				String value = token.getValue();
 				if(value.contains(".")) {
 					parameters.add(new FloatNode(Double.parseDouble(value)));
 				}else {
 					parameters.add(new IntegerNode(Integer.parseInt(value)));
 				}
+			}else if((token = this.matchAndRemove(TokenType.TRUE)) != null) {
+				parameters.add(new BoolNode(true));
+			}else if((token = this.matchAndRemove(TokenType.FALSE)) != null) {
+				parameters.add(new BoolNode(false));
+			}else if((token = this.matchAndRemove(TokenType.CHARCONTENT)) != null) {
+				parameters.add(new CharNode(token.getValue()));
+			}else if((token = this.matchAndRemove(TokenType.STRINGCONTENT)) != null) {
+				parameters.add(new StringNode(token.getValue()));
 			}
 			this.matchAndRemove(TokenType.COMMA);
 		}
@@ -303,13 +360,13 @@ public class Parser {
 		VariableReferenceNode variableReferenceNode = new VariableReferenceNode(varRef.getValue());
 		// expression method for returning variable expression
 		this.matchAndRemove(TokenType.ASSIGNMENT);
-		Node expression = expression();
+		Node expression = expression(false);
 		this.matchAndRemove(TokenType.EndOfLine);
 		return new AssignmentNode(variableReferenceNode, expression);
 	}
 	
 	private WhileNode whileStatement() throws Exception{
-		BooleanExpressionNode booleanExpressionNode = booleanExpression();
+		BooleanExpressionNode booleanExpressionNode = (BooleanExpressionNode)expression(false);
 		if(this.matchAndRemove(TokenType.EndOfLine)!= null) {
 			return new WhileNode(booleanExpressionNode, bodyFunction());
 		}else {
@@ -352,7 +409,7 @@ public class Parser {
 	}
 	
 	private IfNode ifStatement() throws Exception{
-		BooleanExpressionNode booleanExpression = booleanExpression();
+		BooleanExpressionNode booleanExpression = (BooleanExpressionNode)expression(false);
 		ArrayList<StatementNode> statements = new ArrayList<>();
 		if(this.matchAndRemove(TokenType.THEN) != null) {
 			if(this.matchAndRemove(TokenType.EndOfLine) != null) {
@@ -376,11 +433,12 @@ public class Parser {
 		}
 	}
 	
+	
 	private RepeatNode repeatStatement() throws Exception{
 		if(this.matchAndRemove(TokenType.EndOfLine) != null) {
 			ArrayList<StatementNode> statments = bodyFunction();
 			if(this.matchAndRemove(TokenType.UNTIL) != null) {
-				BooleanExpressionNode booleanExpression = booleanExpression();
+				BooleanExpressionNode booleanExpression = (BooleanExpressionNode)expression(false);
 				if(this.matchAndRemove(TokenType.EndOfLine) != null) {
 					return new RepeatNode(booleanExpression, statments);
 				}else {
@@ -394,31 +452,31 @@ public class Parser {
 		}
 	}
 	
-	private BooleanExpressionNode booleanExpression() throws Exception{
-		Node leftExpression = expression();
-		String condition = "";
-		if(this.matchAndRemove(TokenType.GREATER) != null) {
-			condition = "greater";
-		}else if(this.matchAndRemove(TokenType.LESS) != null) {
-			condition = "less";
-		}else if(this.matchAndRemove(TokenType.GreaterEqual) != null) {
-			condition = "greaterEqual";
-		}else if(this.matchAndRemove(TokenType.LessEqual) != null) {
-			condition = "lessEqual";
-		}else if(this.matchAndRemove(TokenType.EQUAL) != null) {
-			condition = "equal";
-		}else if(this.matchAndRemove(TokenType.NotEqual) != null) {
-			condition = "notEqual";
-		}else {
-			throw new Exception("must add a condition after left expressino to evaluate the whole boolean expreesion");
-		}
-		Node rightExpression = expression();
-		return new BooleanExpressionNode(leftExpression, rightExpression, condition);
-	}
+//	private BooleanExpressionNode booleanExpression() throws Exception{
+//		Node leftExpression = expression();
+//		String condition = "";
+//		if(this.matchAndRemove(TokenType.GREATER) != null) {
+//			condition = "greater";
+//		}else if(this.matchAndRemove(TokenType.LESS) != null) {
+//			condition = "less";
+//		}else if(this.matchAndRemove(TokenType.GreaterEqual) != null) {
+//			condition = "greaterEqual";
+//		}else if(this.matchAndRemove(TokenType.LessEqual) != null) {
+//			condition = "lessEqual";
+//		}else if(this.matchAndRemove(TokenType.EQUAL) != null) {
+//			condition = "equal";
+//		}else if(this.matchAndRemove(TokenType.NotEqual) != null) {
+//			condition = "notEqual";
+//		}else {
+//			throw new Exception("must add a condition after left expression to evaluate the whole boolean expreesion");
+//		}
+//		Node rightExpression = expression();
+//		return new BooleanExpressionNode(leftExpression, rightExpression, condition);
+//	}
 	
-	private Node expression() throws Exception {
+	private Node expression(boolean booleanCalled) throws Exception {
 		Node left = term();
-		
+
 		Token op;
 		while((op = this.matchAndRemove(TokenType.PLUS)) != null || (op = this.matchAndRemove(TokenType.MINUS)) != null) {
 			if(op.getTokenType() == TokenType.PLUS) {
@@ -428,6 +486,29 @@ public class Parser {
 			}
 		}
 		
+		Token bo;
+		
+		if((bo = this.matchAndRemove(TokenType.GREATER)) != null || (bo = this.matchAndRemove(TokenType.LESS)) != null ||
+				(bo = this.matchAndRemove(TokenType.GreaterEqual)) != null || (bo = this.matchAndRemove(TokenType.LessEqual)) != null ||
+				(bo = this.matchAndRemove(TokenType.EQUAL)) != null || (bo = this.matchAndRemove(TokenType.NotEqual)) != null) {
+			if(!booleanCalled) {
+				if( bo.getTokenType() == TokenType.GREATER) {
+					left = new BooleanExpressionNode(left, expression(true), "greater");
+				}else if( bo.getTokenType() == TokenType.LESS) {
+					left = new BooleanExpressionNode(left, expression(true), "less");
+				}else if( bo.getTokenType() == TokenType.GreaterEqual) {
+					left = new BooleanExpressionNode(left, expression(true), "greaterEqual");
+				}else if( bo.getTokenType() == TokenType.LessEqual) {
+					left = new BooleanExpressionNode(left, expression(true), "lessEqual");
+				}else if( bo.getTokenType() == TokenType.EQUAL) {
+					left = new BooleanExpressionNode(left, expression(true), "equal");
+				}else if( bo.getTokenType() == TokenType.NotEqual) {
+					left = new BooleanExpressionNode(left, expression(true), "notEqual");
+				}
+			}else {
+				throw new Exception("Parser error: can not have chianed boolean");
+			}
+		}	
 		return left;
 	}
 	
@@ -452,25 +533,39 @@ public class Parser {
 	
 	private Node factor() throws Exception {
 		
-		Token number;
-		Token identifier;
+		Token token;
 		
 		// evaluate whether the factor is a number first, sequence for evaluating number or variable doesn't matter
-		if((number = this.matchAndRemove(TokenType.NUMBER)) != null) {
-			if (number.getValue().contains(".")) {
-				return new FloatNode(Double.parseDouble(number.getValue()));
+		if((token = this.matchAndRemove(TokenType.NUMBER)) != null) {
+			if (token.getValue().contains(".")) {
+				return new FloatNode(Double.parseDouble(token.getValue()));
 			}else {
-				return new IntegerNode(Integer.parseInt(number.getValue()));
+				return new IntegerNode(Integer.parseInt(token.getValue()));
 			}
 		}
 		// evaluate whether the factor is a variable
-		else if((identifier = this.matchAndRemove(TokenType.IDENTIFIER)) != null) {
-			return new VariableReferenceNode(identifier.getValue());
+		else if((token = this.matchAndRemove(TokenType.IDENTIFIER)) != null) {
+			return new VariableReferenceNode(token.getValue());
+		}
+		// evaluate whether the factor is true or false
+		else if(this.matchAndRemove(TokenType.TRUE) != null) {
+			return new BoolNode(true);
+		}
+		else if(this.matchAndRemove(TokenType.FALSE) != null) {
+			return new BoolNode(false);
+		}
+		// evaluate whether the factor is a character
+		else if((token = this.matchAndRemove(TokenType.CHARCONTENT)) != null) {
+			return new CharNode(token.getValue());
+		}
+		// evaluate whether the factor is a string
+		else if((token = this.matchAndRemove(TokenType.STRINGCONTENT)) != null) {
+			return new StringNode(token.getValue());
 		}
 		// if neither it may be a nested expression
 		else if(this.matchAndRemove(TokenType.LeftParenthesis) != null) {
 			
-			Node expression = expression();
+			Node expression = expression(false);
 			
 			if(expression == null) {
 				throw new Exception("Expression should follow after a right parenthesis");

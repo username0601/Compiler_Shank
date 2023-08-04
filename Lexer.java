@@ -16,6 +16,9 @@ public class Lexer {
 		String commentString = "";
 		String assignmentString = "";
 		String compareString = "";
+		String charContent = "";
+		String stringContent = "";
+		String escapeContent = "";
 		
 		ArrayList<Token> tokens = new ArrayList<Token>();
 		
@@ -44,6 +47,11 @@ public class Lexer {
 		reservedWords.put("<=", TokenType.LessEqual);
 		reservedWords.put("<>", TokenType.NotEqual);
 		reservedWords.put("var", TokenType.VAR);
+		reservedWords.put("true", TokenType.TRUE);
+		reservedWords.put("false", TokenType.FALSE);
+		reservedWords.put("bool", TokenType.BOOL);
+		reservedWords.put("char", TokenType.CHAR);
+		reservedWords.put("string", TokenType.STRING);
 		
 		for(int i = 0; i < string.length(); i++) {
 			switch(state) {
@@ -135,6 +143,8 @@ public class Lexer {
 				case ',':
 				case '<':
 				case '>':
+				case '\'':
+				case '\"':
 					if(numString.matches("\\-?\\d*\\.?\\d+")) {
 						if(numString.charAt(0) == '.') {
 							tokens.add(new Token(TokenType.NUMBER, "0"+ numString));
@@ -231,6 +241,14 @@ public class Lexer {
 						tokens.add(new Token(TokenType.COMMA));
 					}else if(string.charAt(i) == '>' || string.charAt(i) == '<') {
 						compareString += string.charAt(i);
+					}else if(string.charAt(i) == '\'') {
+						charContent += string.charAt(i);
+						state = "s3";
+						break;
+					}else if(string.charAt(i) == '\"') {
+						stringContent += string.charAt(i);
+						state = "s3";
+						break;
 					}
 					state = "s1";
 					break;
@@ -273,6 +291,7 @@ public class Lexer {
 				}
 				break;
 			
+			// for comment string only
 			case "s2":
 				switch(string.charAt(i)) {
 				case '*':
@@ -295,12 +314,95 @@ public class Lexer {
 					break;
 				}
 				break;
+				
+			case "s3":
+				switch(string.charAt(i)) {
+				case '\'':
+					if(escapeContent.length() == 1) { 
+						if(charContent.length() == 1) {
+							charContent += "\'";
+						}else if(stringContent.length() >= 1) {
+							stringContent += "\'";
+						}else {
+							throw new Exception("s3: character input invalid, case single quote, character input more than 1, iteration " + i);
+						}
+						escapeContent = "";
+						state = "s3";
+						break;
+					}
+					if(charContent.length() == 2) {
+						tokens.add(new Token(TokenType.CHARCONTENT, charContent.substring(1)));
+						charContent = "";
+						state = "s1";
+						break;
+					}else {
+						throw new Exception("s3: character input invalid, case single quote, " +
+								 "character input less than 1 or need to use escape character to input single quote, iteration " + i);
+					}
+					
+				case '\"':
+					if(escapeContent.length() == 1) { 
+						if(charContent.length() == 1) {
+							charContent += "\"";
+						}else if(stringContent.length() >= 1) {
+							stringContent += "\"";
+						}else {
+							throw new Exception("s3: character input invalid, case double quote, character input more than 1, iteration " + i);
+						}
+						escapeContent = "";
+						state = "s3";
+						break;
+					}
+					if(stringContent.length() >= 2) {
+						tokens.add(new Token(TokenType.STRINGCONTENT, stringContent.substring(1)));
+						stringContent = "";
+						state = "s1";
+						break;
+					}else {
+						throw new Exception("s3: character input invalid, case double quote, " +
+								 "string input less than 1 or need to use escape character to input double single quote, iteration " + i);
+					}
+				
+				// treat single backward slash as an escape character
+				case '\\':
+					if(escapeContent.length() == 1) { 
+						if(charContent.length() == 1) {
+							charContent += "\\";
+						}else if(stringContent.length() >= 1) {
+							stringContent += "\\";
+						}else {
+							throw new Exception("s3: character input invalid, case backward slash, character input more than 1, iteration " + i);
+						}
+						escapeContent = "";
+						state = "s3";
+						break;
+					}
+					escapeContent += string.charAt(i);
+					state = "s3";
+					break;
+					
+				default:
+					if(charContent.length() >= 2) {
+						throw new Exception("s3: character input invalid, case default, character input more than one, iteration " + i);
+					}else if(escapeContent.length() == 1) {
+						throw new Exception("s3: character input invalid, case default, "
+								+ "need to use escape character to input backward slash character, iteration " + i);
+					}else if(charContent.length() == 1) {
+						charContent += string.charAt(i);
+					}else if(stringContent.length() >= 1) {
+						stringContent += string.charAt(i);
+					}
+					state = "s3";
+					break;
+				}
+				break;
 			}
+			
 		}
 		if(numString.length() == 1 && numString.contains("-")) {
 			tokens.add(new Token(TokenType.MINUS));
 		}else if(numString != "" && !numString.matches("\\-?\\d*\\.?\\d+")) {
-			throw new Exception("s1: end number input invalid");
+			throw new Exception("last check: end number input invalid");
 		}else if(numString != ""){
 			if(numString.charAt(0) == '.') {
 				tokens.add(new Token(TokenType.NUMBER, "0"+ numString));
@@ -316,7 +418,7 @@ public class Lexer {
 				tokens.add(new Token(TokenType.IDENTIFIER, wordString));
 			}
 		}else if(wordString != "" && !wordString.matches("[a-zA-Z][a-zA-Z0-9]*")) {
-			throw new Exception("s1: end letter input invalid");
+			throw new Exception("last check: end letter input invalid");
 		}else if(commentString != "") { 
 			if(commentString.contains("(*")) {
 				tokens.add(new Token(TokenType.LeftParenthesis));
@@ -334,6 +436,8 @@ public class Lexer {
 			}else if(compareString.contains("<")) {
 				tokens.add(new Token(TokenType.LESS));
 			}
+		}else if(charContent != "" || stringContent != "" || escapeContent != "") {
+			throw new Exception("last check: end string input invalid");
 		}
 		tokens.add(new Token(TokenType.EndOfLine));
 		return tokens;

@@ -6,6 +6,7 @@ public class VariableNode extends Node{
 	private Node dataTypeNode;
 	private boolean isConstant;
 	
+	
 	VariableNode(String name){
 		this.isConstant = false;
 		this.name = name;

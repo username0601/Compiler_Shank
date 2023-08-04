@@ -1,30 +1,69 @@
-define start 	(var a: integer) (* lol i am the god *)
+define start 	(var o: integer) 
 constants
 lol = 1
 d = 3
 variables (* should variable used as a reference variable? *)
-b,c : integer
-begin 
-	write lol, d
-	read var ok
-	write ok, lol, d
-	integerToReal 6, var mn
-	write mn
-	realToInteger 8.4, var mn
-	write mn
-	squareRoot 3, var s
-	write s
-	getRandom var g
-	write g
-	second var jojo
-	write jojo
-end(* kanye west the boy*)
-define second (var jojo: integer)
+b,c,e, k, a : integer (* assignment data type check *)
+begin (*local variable initial value ??*)
+	b := 5
+	a := 3
+	k := 0
+	write b
+	if a<5 then
+	begin
+		repeat 
+		begin
+			write a
+			for j from 0 to 5
+			begin
+				write a
+				while k < 2 
+				begin
+					k:=k+1
+					write k
+				end
+				write k
+			end
+			a := a + 1
+		end
+		until a=6
+	end
+	repeat
+	begin	
+		b:=b-1
+		write b
+	end
+	until b = 0
+	if b < 3 then
+	begin
+		write b
+	end
+	elsif b < 4 then
+	begin
+		write 8
+	end
+	else
+	begin
+		write 90
+	end
+	for hehe from 3 to 6
+	begin
+		write hehe
+	end
+	second var fk
+	write fk
+	second var fk
+	write fk
+end
+define second (var jk: integer)
 constants
 lol = 1
 d = 3
 variables
 b,c : integer
 begin
-	read var jojo
+	write jk
+	read var jk
+	write jk
 end
+

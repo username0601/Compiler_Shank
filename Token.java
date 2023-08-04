@@ -5,7 +5,8 @@ public class Token {
 	public enum TokenType {EndOfLine, NUMBER, PLUS, MINUS, TIMES, DIVIDE, LeftParenthesis, 
 		RightParenthesis, IDENTIFIER, DEFINE, INTEGER, REAL, BEGIN, END, SEMICOLON, COLON,
 		EQUAL, COMMA, VARIABLES, CONSTANTS, ASSIGNMENT, IF, THEN, ELSE, ELSIF, FOR, FROM,
-		TO, WHILE, REPEAT, UNTIL, MOD, GREATER, LESS, GreaterEqual, LessEqual, NotEqual, VAR}
+		TO, WHILE, REPEAT, UNTIL, MOD, GREATER, LESS, GreaterEqual, LessEqual, NotEqual, VAR, 
+		TRUE, FALSE, CHARCONTENT, STRINGCONTENT, CHAR, STRING, BOOL}
 	
 	private TokenType tokenType;
 	private String value;
@@ -33,6 +34,8 @@ public class Token {
 		if (this.tokenType == TokenType.NUMBER){
 			return this.tokenType.toString() + "(" + this.value + ")";
 		}else if (this.tokenType == TokenType.IDENTIFIER){
+			return this.tokenType.toString() + "(" + this.value + ")";
+		}else if (this.tokenType == TokenType.CHARCONTENT || this.tokenType == TokenType.STRINGCONTENT){
 			return this.tokenType.toString() + "(" + this.value + ")";
 		}else {
 			return this.tokenType.toString();

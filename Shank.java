@@ -68,7 +68,13 @@ public class Shank {
 			System.out.println(functionNodes.get(0));
 			System.out.println(functionNodes.get(1));
 			
-			interpreter.interpretFunction(functionNodes.get(0), parameters);
+//			SemanticAnalysis.checkAssignment(functionNodes);
+			
+			for(FunctionNode fc: functionNodes) {
+				interpreter.interpretFunction(fc, parameters);
+		}
+			
+//			interpreter.interpretFunction(functionNodes.get(0), parameters);
 			
 //			
 //			for(FunctionNode fc: functionNodes) {

@@ -1,4 +1,4 @@
-package lexer;
+package shankCompiler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,9 +13,9 @@ public class Interpreter {
 	public static void interpretFunction(FunctionNode functionNode, ArrayList<InterpreterDataType> parameters) throws Exception {
 		// link all parameter with its corresponding name 
 		LinkedHashMap<String, InterpreterDataType> parameter = new LinkedHashMap<>();
-		ArrayList<Node> pr = new ArrayList<>();
+		
 		//  for the user defined function, we will acquire their parameter signatures by function node's getter
-		pr.addAll(functionNode.getParameters());
+		ArrayList<Node> pr = functionNode.getParameters();
 		int i = 0;
 		HashMap<String, Integer> invocation = new HashMap<String, Integer>();
 		for(Node node: pr) {
@@ -153,9 +153,13 @@ public class Interpreter {
 
 		InterpretBlock(functionNode.getStatements(), allVariables);
 		
-		// after executing the code with begin and end, update the changeable passing by reference variable
+		// after executing the code with begin and end, update the changeable passing by reference variables
 		for (Entry<String, Integer> entry : invocation.entrySet()) {
-			parameters.set(entry.getValue(), allVariables.get(entry.getKey()));
+			if(!allVariables.containsKey(entry.getKey())) {
+				parameters.set(entry.getValue(), allVariables.get(entry.getKey().substring(1)));
+			}else {
+				parameters.set(entry.getValue(), allVariables.get(entry.getKey()));
+			}
 		}
 		
 	}
@@ -189,126 +193,126 @@ public class Interpreter {
 								if(callStatement.get(i).getClass() == func.get(i).getClass()) {
 									// for passing by reference variable
 									if(callStatement.get(i) instanceof VariableReferenceNode) {
+										String vRName = ((VariableReferenceNode)callStatement.get(i)).getName();
 										// for already defined and initialized passing by reference variable
-										if(allVariables.containsKey("@" + ((VariableReferenceNode)callStatement.get(i)).getName())) {
+										if(allVariables.containsKey(vRName) || allVariables.containsKey("@" + vRName)) {
+											
+											if(allVariables.containsKey("@" + vRName)){
+												vRName = "@" + vRName;
+											}
 											// acquire the value of the call function's parameter 
-											InterpreterDataType variableReferenceData = allVariables.get("@" + ((VariableReferenceNode)callStatement.get(i)).getName());
+											InterpreterDataType variableReferenceData = allVariables.get(vRName);
 											// check the data type whether match or not
 											if((variableReferenceData instanceof IntDataType) && (((VariableReferenceNode)(func.get(i))).getDataTypeNode() instanceof IntNode)) {
 												interpreterData.add(variableReferenceData);
-												invocation.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), index);
+												invocation.put(vRName, index);
 											}else if((variableReferenceData instanceof FloatDataType) && (((VariableReferenceNode)(func.get(i))).getDataTypeNode() instanceof RealNode)) {
 												interpreterData.add(variableReferenceData);
-												invocation.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), index);
+												invocation.put(vRName, index);
+											}
+											// auto convert integer to float
+											else if((variableReferenceData instanceof IntDataType) && (((VariableNode)(func.get(i))).getDataTypeNode() instanceof RealNode)) {
+												interpreterData.add(new FloatDataType(((IntDataType)variableReferenceData).getValue()));
+												invocation.put(vRName, index);
+
 											}else if((variableReferenceData instanceof CharDataType) && (((VariableReferenceNode)(func.get(i))).getDataTypeNode() instanceof CharNode)) {
 												interpreterData.add(variableReferenceData);
-												invocation.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), index);
+												invocation.put(vRName, index);
 											}
-											// auto converge char to string
+											// auto convert char to string
 											else if((variableReferenceData instanceof CharDataType) && (((VariableReferenceNode)(func.get(i))).getDataTypeNode() instanceof StringNode)) {
 												interpreterData.add(new StringDataType(((CharDataType)variableReferenceData).getValue()));
-												invocation.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), index);
+												invocation.put(vRName, index);
 											}else if((variableReferenceData instanceof StringDataType) && (((VariableReferenceNode)(func.get(i))).getDataTypeNode() instanceof StringNode)) {
 												interpreterData.add(variableReferenceData);
-												invocation.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), index);
+												invocation.put(vRName, index);
 											}else if((variableReferenceData instanceof BoolDataType) && (((VariableReferenceNode)(func.get(i))).getDataTypeNode() instanceof BoolNode)) {
 												interpreterData.add(variableReferenceData);
-												invocation.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), index);
-											}else {
+												invocation.put(vRName, index);
+											}
+											// for declared only no value assigned variable
+											else if(variableReferenceData == null) {
+												interpreterData.add(variableReferenceData);
+												invocation.put(vRName, index);
+											}
+											else {
 												throw new Exception("Interpreter error: function call's pssing by reference variable data type not match");
 											}
 										}
 										// for new defined passing by reference variable which defined in the function call
 										// assign the variable value to null at first and value will be assigned later after the function execute
 										else {
-											if(((VariableReferenceNode)func.get(i)).getDataTypeNode() instanceof IntNode) {
-												allVariables.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), null);
-												interpreterData.add(allVariables.get("@" + ((VariableReferenceNode)callStatement.get(i)).getName()));
-												invocation.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), index);
-											}else if(((VariableReferenceNode)func.get(i)).getDataTypeNode() instanceof RealNode) {
-												allVariables.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), null);
-												interpreterData.add(allVariables.get("@" + ((VariableReferenceNode)callStatement.get(i)).getName()));
-												invocation.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), index);
-											}else if(((VariableReferenceNode)func.get(i)).getDataTypeNode() instanceof CharNode) {
-												allVariables.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), null);
-												interpreterData.add(allVariables.get("@" + ((VariableReferenceNode)callStatement.get(i)).getName()));
-												invocation.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), index);
-											}else if(((VariableReferenceNode)func.get(i)).getDataTypeNode() instanceof StringNode) {
-												allVariables.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), null);
-												interpreterData.add(allVariables.get("@" + ((VariableReferenceNode)callStatement.get(i)).getName()));
-												invocation.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), index);
-											}else if(((VariableReferenceNode)func.get(i)).getDataTypeNode() instanceof BoolNode) {
-												allVariables.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), null);
-												interpreterData.add(allVariables.get("@" + ((VariableReferenceNode)callStatement.get(i)).getName()));
-												invocation.put("@" + ((VariableReferenceNode)callStatement.get(i)).getName(), index);
-											}else {
-												throw new Exception("Interpreter error: function call's pssing by reference variable data type not match");
-											}
+											allVariables.put("@" + vRName, null);
+											interpreterData.add(allVariables.get("@" + vRName));
+											invocation.put("@" + vRName, index);
 										}										
 									}
 									// for passing by value variable
 									else if(callStatement.get(i) instanceof VariableNode){
-										// check if the reference variables reference the same type
-										if(((VariableNode)(callStatement.get(i))).getDataTypeNode() == 
-												((VariableNode)(func.get(i))).getDataTypeNode()) {
-											if(((VariableNode)callStatement.get(i)).getDataTypeNode() instanceof IntNode) {
-												// check whether the variable name match the previous initialization
-												if(allVariables.containsKey(((VariableNode)callStatement.get(i)).getName())) {
-													interpreterData.add(allVariables.get(((VariableNode)callStatement.get(i)).getName()));
-												}else {
-													throw new Exception("Interpreter error: can't find int variable's initialization");
-												}
-											}else if(((VariableNode)callStatement.get(i)).getDataTypeNode() instanceof RealNode){
-												// check whether the variable name match the previous initialization
-												if(allVariables.containsKey(((VariableNode)callStatement.get(i)).getName())) {
-													interpreterData.add(allVariables.get(((VariableNode)callStatement.get(i)).getName()));
-												}else {
-													throw new Exception("Interpreter error: can't find float variable's initialization");
-												}
-											}else if(((VariableNode)callStatement.get(i)).getDataTypeNode() instanceof CharNode){
-												// check whether the variable name match the previous initialization
-												if(allVariables.containsKey(((VariableNode)callStatement.get(i)).getName())) {
-													interpreterData.add(allVariables.get(((VariableNode)callStatement.get(i)).getName()));
-												}else {
-													throw new Exception("Interpreter error: can't find float variable's initialization");
-												}
-											}else if(((VariableNode)callStatement.get(i)).getDataTypeNode() instanceof StringNode){
-												// check whether the variable name match the previous initialization
-												if(allVariables.containsKey(((VariableNode)callStatement.get(i)).getName())) {
-													interpreterData.add(allVariables.get(((VariableNode)callStatement.get(i)).getName()));
-												}else {
-													throw new Exception("Interpreter error: can't find float variable's initialization");
-												}
-											}else if(((VariableNode)callStatement.get(i)).getDataTypeNode() instanceof BoolNode){
-												// check whether the variable name match the previous initialization
-												if(allVariables.containsKey(((VariableNode)callStatement.get(i)).getName())) {
-													interpreterData.add(allVariables.get(((VariableNode)callStatement.get(i)).getName()));
-												}else {
-													throw new Exception("Interpreter error: can't find float variable's initialization");
-												}
+										String vRName = ((VariableReferenceNode)callStatement.get(i)).getName();
+										// for already defined and initialized variable
+										if(allVariables.containsKey(vRName) || allVariables.containsKey("@" + vRName)) {
+											if(allVariables.containsKey("@" + vRName)){
+												vRName = "@" + vRName;
 											}
-										}else if(((VariableNode)(callStatement.get(i))).getDataTypeNode() instanceof CharNode && 
-												((VariableNode)(func.get(i))).getDataTypeNode() instanceof StringNode) {
-											// check whether the variable name match the previous initialization
-											if(allVariables.containsKey(((VariableNode)callStatement.get(i)).getName())) {
-												interpreterData.add(new StringDataType(((CharDataType)(allVariables.get(((VariableNode)callStatement.get(i)).getName()))).getValue()));
-											}else {
-												throw new Exception("Interpreter error: can't find float variable's initialization");
+											
+											// acquire the value of the call function's parameter 
+											InterpreterDataType variableReferenceData = allVariables.get(vRName);
+											// check the data type whether match or not
+											if((variableReferenceData instanceof IntDataType) && (((VariableNode)(func.get(i))).getDataTypeNode() instanceof IntNode)) {
+												interpreterData.add(variableReferenceData);
+											}else if((variableReferenceData instanceof FloatDataType) && (((VariableNode)(func.get(i))).getDataTypeNode() instanceof RealNode)) {
+												interpreterData.add(variableReferenceData);
+
+											}
+											// auto convert integer to float
+											else if((variableReferenceData instanceof IntDataType) && (((VariableNode)(func.get(i))).getDataTypeNode() instanceof RealNode)) {
+												interpreterData.add(new FloatDataType(((IntDataType)variableReferenceData).getValue()));
+
+											}else if((variableReferenceData instanceof CharDataType) && (((VariableNode)(func.get(i))).getDataTypeNode() instanceof CharNode)) {
+												interpreterData.add(variableReferenceData);
+											}
+											// auto convert char to string
+											else if((variableReferenceData instanceof CharDataType) && (((VariableNode)(func.get(i))).getDataTypeNode() instanceof StringNode)) {
+												interpreterData.add(new StringDataType(((CharDataType)variableReferenceData).getValue()));
+											}else if((variableReferenceData instanceof StringDataType) && (((VariableNode)(func.get(i))).getDataTypeNode() instanceof StringNode)) {
+												interpreterData.add(variableReferenceData);
+											}else if((variableReferenceData instanceof BoolDataType) && (((VariableNode)(func.get(i))).getDataTypeNode() instanceof BoolNode)) {
+												interpreterData.add(variableReferenceData);
+											}
+											// for declared only no value assigned variable
+											else if(variableReferenceData == null) {
+												interpreterData.add(variableReferenceData);
+											}
+											else {
+												throw new Exception("Interpreter error: function call's pssing by value variable data type not match");
 											}
 										}
 										else {
-											throw new Exception("Interpreter error: function call's value variable data type not match");
+											throw new Exception("Interpreter error: function call's pssing by reference variable data type not match");
 										}
+										
 									}
 								}
 								// for number, char, string and bool value argument
-								else if((callStatement.get(i) instanceof FloatNode || callStatement.get(i) instanceof IntegerNode) && 
+								else if((callStatement.get(i) instanceof FloatNode || callStatement.get(i) instanceof IntegerNode || 
+										callStatement.get(i) instanceof CharNode || callStatement.get(i) instanceof StringNode) && 
 										func.get(i) instanceof VariableNode) {
 									if(callStatement.get(i) instanceof FloatNode && ((VariableNode)func.get(i)).getDataTypeNode() instanceof FloatNode) {
 										interpreterData.add(new FloatDataType(((FloatNode)callStatement.get(i)).getFloat()));
-									}else if(callStatement.get(i) instanceof IntNode && ((VariableNode)func.get(i)).getDataTypeNode() instanceof IntNode) {
-										interpreterData.add(new IntDataType(((IntegerNode)callStatement.get(i)).getInteger()));
-									}else {
+									}else if(callStatement.get(i) instanceof IntNode && ((VariableNode)func.get(i)).getDataTypeNode() instanceof IntegerNode) {
+										interpreterData.add(new IntDataType(((IntNode)callStatement.get(i)).getValue()));
+									}else if(callStatement.get(i) instanceof IntNode && ((VariableNode)func.get(i)).getDataTypeNode() instanceof FloatNode) {
+										interpreterData.add(new IntDataType(((IntNode)callStatement.get(i)).getValue()));
+									}else if(callStatement.get(i) instanceof CharNode && ((VariableNode)func.get(i)).getDataTypeNode() instanceof StringNode) {
+										interpreterData.add(new StringDataType(((CharNode)callStatement.get(i)).getValue()));
+									}else if(callStatement.get(i) instanceof CharNode && ((VariableNode)func.get(i)).getDataTypeNode() instanceof CharNode) {
+										interpreterData.add(new CharDataType(((CharNode)callStatement.get(i)).getValue()));
+									}else if(callStatement.get(i) instanceof StringNode && ((VariableNode)func.get(i)).getDataTypeNode() instanceof StringNode) {
+										interpreterData.add(new StringDataType(((StringNode)callStatement.get(i)).getValue()));
+									}
+									// always put bool value into variable  
+									else {
 										throw new Exception("Interpreter error: function call's number value data type not match");
 									}
 								}
@@ -322,9 +326,11 @@ public class Interpreter {
 						interpretFunction((FunctionNode)calledFunctionNode, interpreterData);
 						
 						for (Entry<String, Integer> entry : invocation.entrySet()) {
-							allVariables.put(entry.getKey(), interpreterData.get(entry.getValue()));
-//							System.out.println(entry.getKey());
-//							System.out.println(interpreterData.get(entry.getValue()));
+							if(!allVariables.containsKey(entry.getKey())) {
+								allVariables.put(entry.getKey().substring(1), interpreterData.get(entry.getValue()));
+							}else {
+								allVariables.put(entry.getKey(), interpreterData.get(entry.getValue()));
+							}
 						}
 					}
 					// for build in function
@@ -336,33 +342,41 @@ public class Interpreter {
 						for(Node bip: callStatement) {
 							// for passing by reference variable
 							if(bip instanceof VariableReferenceNode) {
+								String variableName = ((VariableReferenceNode)bip).getName();
 								// check whether the variable name match the previous initialization
-								if(allVariables.containsKey(((VariableReferenceNode)bip).getName())) {
-									interpreterData.add(allVariables.get(((VariableReferenceNode)bip).getName()));
-									invocation.put(((VariableReferenceNode)bip).getName(), index);
+								if(allVariables.containsKey(variableName) || allVariables.containsKey("@" + variableName)) {
+									if(allVariables.containsKey("@" + variableName)) {
+										variableName = "@" + variableName;
+									}
+									interpreterData.add(allVariables.get(variableName));
+									invocation.put(variableName, index);
 								}else {
+									variableName = "@" + variableName;
 									// for new defined passing by reference variable which defined in the function call
 									// assign the variable value to null at first and value will be assigned after the function execute
-									allVariables.put("@" + ((VariableReferenceNode)bip).getName(), null);
+									allVariables.put(variableName, null);
 									// add the null into the list first
-									interpreterData.add(allVariables.get("@" + ((VariableReferenceNode)bip).getName()));
-									invocation.put("@" + ((VariableReferenceNode)bip).getName(), index);
+									interpreterData.add(allVariables.get(variableName));
+									invocation.put(variableName, index);
 								}
 							}
 							// for passing by value variable
 							else if(bip instanceof VariableNode) {
+								
+								String variableName = ((VariableNode)bip).getName();
 								// check whether the variable name match the previous initialization
-								if(allVariables.containsKey(((VariableNode)bip).getName())) {
-									interpreterData.add(allVariables.get(((VariableNode)bip).getName()));
-								}
-
-								else if(allVariables.containsKey(("@" + ((VariableNode)bip).getName()))) {
-									interpreterData.add(allVariables.get("@" + ((VariableNode)bip).getName()));
-								}
-								else {
-									System.out.println(bip);
-									System.out.println(((VariableNode)bip).getName());
-									throw new Exception("Interpreter error: can't find passing by value variable's initialization");
+								if(allVariables.containsKey(variableName) || allVariables.containsKey("@" + variableName)) {
+									if(allVariables.containsKey("@" + variableName)) {
+										variableName = "@" + variableName;
+									}
+									interpreterData.add(allVariables.get(variableName));
+								}else {
+									variableName = "@" + variableName;
+									// for new defined passing by reference variable which defined in the function call
+									// assign the variable value to null at first and value will be assigned after the function execute
+									allVariables.put(variableName, null);
+									// add the null into the list first
+									interpreterData.add(allVariables.get(variableName));
 								}
 							}
 							// for number value argument
@@ -371,6 +385,14 @@ public class Interpreter {
 									interpreterData.add(new FloatDataType(((FloatNode)bip).getFloat()));
 								}else {
 									interpreterData.add(new IntDataType(((IntegerNode)bip).getInteger()));
+								}
+							}
+							// for literal value argument
+							else if((bip instanceof CharNode) || (bip instanceof StringNode)) {
+								if(bip instanceof CharNode) {
+									interpreterData.add(new CharDataType(((CharNode)bip).getValue()));
+								}else {
+									interpreterData.add(new StringDataType(((StringNode)bip).getValue()));
 								}
 							}else {
 								throw new Exception("Interpreter error: function call's parameters can't accept");
@@ -393,7 +415,12 @@ public class Interpreter {
 						}
 				
 						for (Entry<String, Integer> entry : invocation.entrySet()) {
-							allVariables.put(entry.getKey(), interpreterData.get(entry.getValue()));
+							if(!allVariables.containsKey(entry.getKey())) {
+								allVariables.put(entry.getKey().substring(1), interpreterData.get(entry.getValue()));
+							}else {
+								allVariables.put(entry.getKey(), interpreterData.get(entry.getValue()));
+							}
+							
 //							System.out.println(entry.getKey());
 //							System.out.println(interpreterData.get(entry.getValue()));
 						}
@@ -401,41 +428,46 @@ public class Interpreter {
 					
 				}else {
 					throw new Exception("Interpreter error: called function name not found");
-				}	
+				}
+				
+				
+				
 			}
 			else if(statement instanceof AssignmentNode) {
-				VariableReferenceNode leftVR = (((AssignmentNode)statement).getLeft());
+				String leftVName = (((AssignmentNode)statement).getLeft()).getName();
 				Node rightExpression = (((AssignmentNode)statement).getRight());
 				// check whether the left node is defined or not
-				if(allVariables.containsKey(leftVR.getName())) {
+				if(allVariables.containsKey(leftVName) || allVariables.containsKey("@" + leftVName)) {
+					if(allVariables.containsKey("@" + leftVName)) {
+						leftVName = "@" + leftVName;
+					}
 					// whether left assigned node is initialized which means it has value or not means the value is null
 					// the right assignment node's result will assign to the left node 
 					if(resolve(rightExpression, allVariables) instanceof Integer) {
-						if(allVariables.get(leftVR.getName()) instanceof IntDataType) {
-							allVariables.put(leftVR.getName(), new IntDataType(resolve(rightExpression, allVariables).intValue()));
+						if(allVariables.get(leftVName) instanceof IntDataType) {
+							allVariables.put(leftVName, new IntDataType(resolve(rightExpression, allVariables).intValue()));
 						}
 						// auto convert left int value to a double when the assigned variable is double 
 						else {
-							allVariables.put(leftVR.getName(), new FloatDataType(resolve(rightExpression, allVariables).doubleValue()));
+							allVariables.put(leftVName, new FloatDataType(resolve(rightExpression, allVariables).doubleValue()));
 						}
 					}else if(resolve(rightExpression, allVariables) instanceof Double) {
-						if(allVariables.get(leftVR.getName()) instanceof IntDataType) {
+						if(allVariables.get(leftVName) instanceof IntDataType) {
 							throw new Exception("Interpreter error: Left assigned node is int data type and right expression is float");
 						}else {
-							allVariables.put(leftVR.getName(), new FloatDataType(resolve(rightExpression, allVariables).doubleValue()));
+							allVariables.put(leftVName, new FloatDataType(resolve(rightExpression, allVariables).doubleValue()));
 						}
-					}else if(resolve(rightExpression, allVariables) instanceof Double) {
-						if(allVariables.get(leftVR.getName()) instanceof IntDataType) {
-							throw new Exception("Interpreter error: Left assigned node is int data type and right expression is float");
+					}else if(resolveLiteral(rightExpression, allVariables) instanceof String) {
+						String rightE = resolveLiteral(rightExpression, allVariables);
+						if(allVariables.get(leftVName) instanceof CharDataType && rightE.length() == 1) {
+							allVariables.put(leftVName, new CharDataType(rightE));
+						}else if(allVariables.get(leftVName) instanceof StringDataType){
+							allVariables.put(leftVName, new StringDataType(rightE));
 						}else {
-							allVariables.put(leftVR.getName(), new FloatDataType(resolve(rightExpression, allVariables).doubleValue()));
+							throw new Exception("Interpreter error: Left assigned node is char data type and right expression is string");
 						}
-					}else if(resolve(rightExpression, allVariables) instanceof Double) {
-						if(allVariables.get(leftVR.getName()) instanceof IntDataType) {
-							throw new Exception("Interpreter error: Left assigned node is int data type and right expression is float");
-						}else {
-							allVariables.put(leftVR.getName(), new FloatDataType(resolve(rightExpression, allVariables).doubleValue()));
-						}
+					}else if(rightExpression instanceof BoolNode) {
+						allVariables.put(leftVName, new BoolDataType(((BoolNode)rightExpression).getValue()));
 					}
 				}else {
 					throw new Exception("Interpreter error: Left assigned node initialization not found");
@@ -465,12 +497,14 @@ public class Interpreter {
 				IfNode ifNode = (IfNode)statement;
 				while(!evaluateBooleanExpression(ifNode.getBoolean(), allVariables)) {
 					ifNode = ifNode.getNext();
-					if(ifNode.getNext() == null) {
+					if(ifNode == null) {
 						break;
 					}
 					continue;
 				}
-				InterpretBlock(ifNode.getIfstatements(), allVariables);
+				if(ifNode != null) {
+					InterpretBlock(ifNode.getIfstatements(), allVariables);
+				}
 			}
 			else if (statement instanceof RepeatNode) {
 				do {
@@ -479,42 +513,117 @@ public class Interpreter {
 			}
 		}
 	}
-
+	
 	public static boolean evaluateBooleanExpression(BooleanExpressionNode booleanNode, LinkedHashMap<String, InterpreterDataType> allVariables) throws Exception {
-		// auto cast both left and right expression value to double since data type is not considered here
-		double leftValue = resolve(booleanNode.getLeftExpression(), allVariables).doubleValue();
-		double rightValue = resolve(booleanNode.getRightExpression(), allVariables).doubleValue();
+		Node left = booleanNode.getLeftExpression();
+		Node right = booleanNode.getRightExpression();
 		
-		if((booleanNode.getCondtion()).equals("greater")) {
-			return leftValue > rightValue;
-		}else if((booleanNode.getCondtion()).equals("less")) {
-			return leftValue < rightValue;
-		}else if((booleanNode.getCondtion()).equals("greaterEqual")) {
-			return leftValue >= rightValue;
-		}else if((booleanNode.getCondtion()).equals("lessEqual")) {
-			return leftValue <= rightValue;
-		}else if((booleanNode.getCondtion()).equals("equal")) {
-			return leftValue == rightValue;
-		}else{
-			return leftValue != rightValue;
+		// for single variable reference for bool
+		if((left instanceof VariableReferenceNode && right instanceof VariableReferenceNode) && 
+				(allVariables.get(((VariableReferenceNode)left).getName()) instanceof BoolDataType && 
+						allVariables.get(((VariableReferenceNode)right).getName()) instanceof BoolDataType)){
+			return ((BoolDataType)(allVariables.get(((VariableReferenceNode)right).getName()))).getValue();
+		}
+		// for literal concatenation
+		else if(resolve(left, allVariables) == null || resolve(right, allVariables) == null) {
+			String leftValue = resolveLiteral(left, allVariables);
+			String rightValue = resolveLiteral(right, allVariables);
+			if((booleanNode.getCondtion()).equals("equal")) {
+				return leftValue.equals(rightValue);
+			}else if((booleanNode.getCondtion()).equals("notEqual")) {
+				return !leftValue.equals(rightValue);
+			}else {
+				throw new Exception("Interpreter error: Literals can only be compared through equal or not equal");
+			}
+		}else {
+			// auto cast both left and right expression value to double since data type is not concerned in here
+			double leftValue = resolve(left, allVariables).doubleValue();
+			double rightValue = resolve(right, allVariables).doubleValue();	
+			if((booleanNode.getCondtion()).equals("greater")) {
+				return leftValue > rightValue;
+			}else if((booleanNode.getCondtion()).equals("less")) {
+				return leftValue < rightValue;
+			}else if((booleanNode.getCondtion()).equals("greaterEqual")) {
+				return leftValue >= rightValue;
+			}else if((booleanNode.getCondtion()).equals("lessEqual")) {
+				return leftValue <= rightValue;
+			}else if((booleanNode.getCondtion()).equals("equal")) {
+				return leftValue == rightValue;
+			}else{
+				return leftValue != rightValue;
+			}
 		}
 	}
+	
+	public static String resolveLiteral(Node node, LinkedHashMap<String, InterpreterDataType> allVariables) throws Exception{
+		if(node instanceof CharNode) {
+			return ((CharNode) node).getValue();
+		}else if(node instanceof StringNode) {
+			return ((StringNode) node).getValue();
+		}else if(node instanceof VariableReferenceNode) {
+			if(allVariables.containsKey(((VariableReferenceNode)node).getName())) {			
+				InterpreterDataType variableData = allVariables.get(((VariableReferenceNode)node).getName());
+	            if (variableData instanceof CharDataType) {
+	                return ((CharDataType) variableData).getValue();
+	            }else if (variableData instanceof StringDataType) {
+	                return ((StringDataType) variableData).getValue();
+	            }
+			}else {
+				throw new Exception("Interpreter error: Left assigned variable reference initialization not found");
+			}
+		}else if(node instanceof MathOpNode) {
+			String left = resolveLiteral(((MathOpNode)node).getLeft(), allVariables);
+			String right = resolveLiteral(((MathOpNode)node).getRight(), allVariables);
+			String operation = ((MathOpNode) node).getOp().toString();
+			if (operation.equals("ADD")) {
+				return left + right;
+			}else {
+				throw new Exception("Interpreter error: Literals can only use add operator");
+			}
+		}
+		return null;
+	}
+	
 	
 	
 	// return either int or double
 	public static <T extends Number> T resolve(Node node, LinkedHashMap<String, InterpreterDataType> allVariables) throws Exception {
-
 		if(node instanceof FloatNode) {			
 			return (T) Double.valueOf(((FloatNode)node).getFloat());
 		}else if(node instanceof IntegerNode) {
 			return (T) Integer.valueOf(((IntegerNode)node).getInteger());
-		}else if(node instanceof VariableReferenceNode) {
-			if(allVariables.containsKey(((VariableReferenceNode)node).getName())) {			
-				InterpreterDataType variableData = allVariables.get(((VariableReferenceNode)node).getName());
+		}else if(node instanceof CharNode || node instanceof StringNode) {
+			return null;
+		}else if(node instanceof VariableNode) {
+			String variableName = ((VariableNode)node).getName();
+			if(allVariables.containsKey(variableName) || allVariables.containsKey("@" + variableName)) {	
+				if(allVariables.containsKey("@" + variableName)) {
+					variableName = "@" + variableName;
+				}
+				InterpreterDataType variableData = allVariables.get(variableName);
 	            if (variableData instanceof IntDataType) {
 	                return (T) Integer.valueOf(((IntDataType) variableData).getValue());
-	            } else if (variableData instanceof FloatDataType) {
+	            }else if (variableData instanceof FloatDataType) {
 	                return (T) Double.valueOf(((FloatDataType) variableData).getValue());
+	            }else if (variableData instanceof CharDataType || variableData instanceof StringDataType) {
+	                return null;
+	            }
+			}else {
+				throw new Exception("Interpreter error: Left assigned variable reference initialization not found");
+			}
+		}else if(node instanceof VariableReferenceNode) {
+			String variableName = ((VariableReferenceNode)node).getName();
+			if(allVariables.containsKey(variableName) || allVariables.containsKey("@" + variableName)) {
+				if(allVariables.containsKey("@" + variableName)) {
+					variableName = "@" + variableName;
+				}
+				InterpreterDataType variableData = allVariables.get(variableName);
+	            if (variableData instanceof IntDataType) {
+	                return (T) Integer.valueOf(((IntDataType) variableData).getValue());
+	            }else if (variableData instanceof FloatDataType) {
+	                return (T) Double.valueOf(((FloatDataType) variableData).getValue());
+	            }else if (variableData instanceof CharDataType || variableData instanceof StringDataType) {
+	                return null;
 	            }
 			}else {
 				throw new Exception("Interpreter error: Left assigned variable reference initialization not found");
@@ -523,6 +632,9 @@ public class Interpreter {
 		else if(node instanceof MathOpNode){
 			T leftValue = resolve(((MathOpNode) node).getLeft(), allVariables);
 		    T rightValue = resolve(((MathOpNode) node).getRight(), allVariables);
+		    if(leftValue == null || rightValue == null) {
+		    	return null;
+		    }
 		    String operation = ((MathOpNode) node).getOp().toString();
 		    if (operation.equals("ADD")) {
 	            if(leftValue instanceof Double && rightValue instanceof Integer) {
@@ -594,5 +706,3 @@ public class Interpreter {
 		return null;
 	}
 }
-
-

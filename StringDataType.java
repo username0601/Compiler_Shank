@@ -1,4 +1,4 @@
-package lexer;
+package shankCompiler;
 
 public class StringDataType extends InterpreterDataType {
 

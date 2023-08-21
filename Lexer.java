@@ -1,11 +1,11 @@
-package lexer;
+package shankCompiler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
 import java.util.regex.Pattern;
 
-import lexer.Token.TokenType;
+import shankCompiler.Token.TokenType;
 
 public class Lexer {
 

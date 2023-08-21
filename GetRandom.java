@@ -1,4 +1,4 @@
-package lexer;
+package shankCompiler;
 
 import java.util.ArrayList;
 import java.util.Random;

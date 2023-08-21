@@ -1,4 +1,4 @@
-package lexer;
+package shankCompiler;
 
 public class FloatDataType extends InterpreterDataType{
 

@@ -1,19 +1,19 @@
-package lexer;
+package shankCompiler;
 
 import java.util.ArrayList;
 
-import lexer.Token.TokenType;
+import shankCompiler.Token.TokenType;
 
 public class Parser {
 
-	private ArrayList<Token> tokens;
+	public static ArrayList<Token> tokens;
 	
 	Parser(ArrayList<Token> tokens){
 		this.tokens = tokens;
 	}
 	
 	private Token matchAndRemove(TokenType tokenType) {
-		if(this.tokens.get(0).getTokenType() == tokenType) {
+		if(this.tokens.size() > 0 && this.tokens.get(0).getTokenType() == tokenType) {
 			return this.tokens.remove(0);
 		}else {
 			return null;
@@ -21,10 +21,11 @@ public class Parser {
 	}
 	
 	public Node parse() throws Exception {
-//		Node expression = expression();
-//		this.matchAndRemove(TokenType.EndOfLine);
-//		return expression;
-		return functionDefinition();
+		while(this.matchAndRemove(TokenType.EndOfLine)!= null) {
+			continue;
+		}
+		Node function = functionDefinition();
+		return function;
 	}
 	
 	private Node functionDefinition() throws Exception {
@@ -43,7 +44,9 @@ public class Parser {
 				ArrayList<Node> parameters = variableDeclaration();
 				
 				if (this.matchAndRemove(TokenType.RightParenthesis) != null) {
-					this.matchAndRemove(TokenType.EndOfLine);
+					while(this.matchAndRemove(TokenType.EndOfLine)!= null) {
+						continue;
+					}
 					ArrayList<Node> constants = constants();
 					ArrayList<Node> variables = variables();
 					ArrayList<StatementNode> body = bodyFunction();
@@ -148,7 +151,9 @@ public class Parser {
 	private ArrayList<Node> constants() throws Exception{
 		Token constant = this.matchAndRemove(TokenType.CONSTANTS);
 		if(constant != null) {
-			this.matchAndRemove(TokenType.EndOfLine);
+			while(this.matchAndRemove(TokenType.EndOfLine)!= null) {
+				continue;
+			}
 			ArrayList<Node> constantNode = processConstants();
 			if(constantNode.isEmpty()) {
 				throw new Exception("need to declare constant after 'constant'");
@@ -173,7 +178,6 @@ public class Parser {
 					}else {
 						constantNode.add(new VariableNode(constantName, new IntNode(Integer.parseInt(token.getValue())), true));
 					}
-					this.matchAndRemove(TokenType.EndOfLine);
 				}else if((token = this.matchAndRemove(TokenType.TRUE)) != null)  {
 					constantNode.add(new VariableNode(constantName, new BoolNode(true), true));
 				}else if((token = this.matchAndRemove(TokenType.FALSE)) != null)  {
@@ -186,6 +190,9 @@ public class Parser {
 				else {
 					throw new Exception("Parser error: constant initialization invalid");
 				}
+				while(this.matchAndRemove(TokenType.EndOfLine)!= null) {
+					continue;
+				}
 			}else {
 				throw new Exception("single equal character need to follow after the identifier");
 			}
@@ -196,7 +203,9 @@ public class Parser {
 	private ArrayList<Node> variables() throws Exception{
 		Token variable = this.matchAndRemove(TokenType.VARIABLES);
 		if(variable != null) {
-			this.matchAndRemove(TokenType.EndOfLine);
+			while(this.matchAndRemove(TokenType.EndOfLine)!= null) {
+				continue;
+			}
 			ArrayList<Node> variableNode = processVariables();
 			if(variableNode.isEmpty()) {
 				throw new Exception("need to declare variable after 'variables'");
@@ -248,6 +257,9 @@ public class Parser {
 				throw new Exception("variable data type declaration invalid " + this.tokens.get(0));
 			}
 			if(this.matchAndRemove(TokenType.EndOfLine) != null) {
+				while(this.matchAndRemove(TokenType.EndOfLine)!= null) {
+					continue;
+				}
 				identifier = this.matchAndRemove(TokenType.IDENTIFIER);
 			}else {
 				throw new Exception("need to start on a new line for another variable declaratino or body function");
@@ -261,9 +273,15 @@ public class Parser {
 	private ArrayList<StatementNode> bodyFunction() throws Exception{
 		if(this.matchAndRemove(TokenType.BEGIN) != null) {
 			if(this.matchAndRemove(TokenType.EndOfLine) != null) {
+				while(this.matchAndRemove(TokenType.EndOfLine)!= null) {
+					continue;
+				}
 				ArrayList<StatementNode> statements = statements();
 				if(this.matchAndRemove(TokenType.END) != null) {
 					if(this.matchAndRemove(TokenType.EndOfLine) != null) {
+						while(this.matchAndRemove(TokenType.EndOfLine)!= null) {
+							continue;
+						}
 						return statements;
 					}else {
 						throw new Exception("need to have nothing after 'end'");
@@ -284,7 +302,10 @@ public class Parser {
 		StatementNode statement;
 		while((statement = statement()) != null) {
 			statements.add(statement);
-			this.matchAndRemove(TokenType.EndOfLine);
+//			this.matchAndRemove(TokenType.EndOfLine);
+			while(this.matchAndRemove(TokenType.EndOfLine)!= null) {
+				continue;
+			}
 		}
 		return statements;
 	}
@@ -366,9 +387,21 @@ public class Parser {
 	}
 	
 	private WhileNode whileStatement() throws Exception{
-		BooleanExpressionNode booleanExpressionNode = (BooleanExpressionNode)expression(false);
+		Node booleanExpression = expression(false);
 		if(this.matchAndRemove(TokenType.EndOfLine)!= null) {
-			return new WhileNode(booleanExpressionNode, bodyFunction());
+			while(this.matchAndRemove(TokenType.EndOfLine)!= null) {
+				continue;
+			}
+			if(booleanExpression instanceof BooleanExpressionNode) {
+				return new WhileNode((BooleanExpressionNode)booleanExpression, bodyFunction());
+			}else if(booleanExpression instanceof VariableReferenceNode) {
+				return new WhileNode(new BooleanExpressionNode(booleanExpression, booleanExpression, "equal"), bodyFunction());
+			}
+			// no reason to have bool value as the condition expression
+			else {
+				throw new Exception("have invalid boolean expression");
+			}
+//			return new WhileNode(booleanExpressionNode, bodyFunction());
 		}else {
 			throw new Exception("must have nothing after the boolean expression and start a new line for body statements");
 		}
@@ -384,6 +417,9 @@ public class Parser {
 						Token endNumber;
 						if((endNumber = this.matchAndRemove(TokenType.NUMBER)) != null) {
 							if(this.matchAndRemove(TokenType.EndOfLine) != null) {
+								while(this.matchAndRemove(TokenType.EndOfLine)!= null) {
+									continue;
+								}
 								return new ForNode(new VariableReferenceNode(identifier.getValue()),
 										new IntegerNode(Integer.parseInt(startNumber.getValue())), 
 										new IntegerNode(Integer.parseInt(endNumber.getValue())), 
@@ -409,21 +445,36 @@ public class Parser {
 	}
 	
 	private IfNode ifStatement() throws Exception{
-		BooleanExpressionNode booleanExpression = (BooleanExpressionNode)expression(false);
+		Node booleanExpression = expression(false);
+		if(booleanExpression instanceof BooleanExpressionNode) {
+			// do nothing
+		}else if(booleanExpression instanceof VariableReferenceNode) {
+			booleanExpression = new BooleanExpressionNode(booleanExpression, booleanExpression, "equal");
+		}
+		// no reason to have bool value as the condition expression
+		else {
+			throw new Exception("have invalid boolean expression");
+		}
 		ArrayList<StatementNode> statements = new ArrayList<>();
 		if(this.matchAndRemove(TokenType.THEN) != null) {
 			if(this.matchAndRemove(TokenType.EndOfLine) != null) {
+				while(this.matchAndRemove(TokenType.EndOfLine)!= null) {
+					continue;
+				}
 				statements.addAll(bodyFunction());
 				if(this.matchAndRemove(TokenType.ELSIF) != null) {
-					return new IfNode(booleanExpression, statements, ifStatement());
+					return new IfNode((BooleanExpressionNode)booleanExpression, statements, ifStatement());
 				}else if(this.matchAndRemove(TokenType.ELSE) != null) {
 					if(this.matchAndRemove(TokenType.EndOfLine) != null) {
-						return new IfNode(booleanExpression, statements, new IfNode(null, bodyFunction(), null));
+						while(this.matchAndRemove(TokenType.EndOfLine)!= null) {
+							continue;
+						}
+						return new IfNode((BooleanExpressionNode)booleanExpression, statements, new IfNode(null, bodyFunction(), null));
 					}else {
 						throw new Exception("must have nothing after 'else' and start a new line for body statement");
 					}
 				}else {
-					return new IfNode(booleanExpression, statements, null);
+					return new IfNode((BooleanExpressionNode)booleanExpression, statements, null);
 				}
 			}else {
 				throw new Exception("must have nothing after 'then' and start a new line for body statement");
@@ -436,11 +487,22 @@ public class Parser {
 	
 	private RepeatNode repeatStatement() throws Exception{
 		if(this.matchAndRemove(TokenType.EndOfLine) != null) {
+			while(this.matchAndRemove(TokenType.EndOfLine)!= null) {
+				continue;
+			}
 			ArrayList<StatementNode> statments = bodyFunction();
 			if(this.matchAndRemove(TokenType.UNTIL) != null) {
-				BooleanExpressionNode booleanExpression = (BooleanExpressionNode)expression(false);
+				Node booleanExpression = expression(false);
 				if(this.matchAndRemove(TokenType.EndOfLine) != null) {
-					return new RepeatNode(booleanExpression, statments);
+					if(booleanExpression instanceof BooleanExpressionNode) {
+						return new RepeatNode((BooleanExpressionNode)booleanExpression, statments);
+					}else if(booleanExpression instanceof VariableReferenceNode) {
+						return new RepeatNode(new BooleanExpressionNode(booleanExpression, booleanExpression, "equal"), statments);
+					}
+					// no reason to have bool value as the condition expression
+					else {
+						throw new Exception("have invalid boolean expression");
+					}
 				}else {
 					throw new Exception("must have nothing after the boolean expression");
 				}
@@ -476,7 +538,6 @@ public class Parser {
 	
 	private Node expression(boolean booleanCalled) throws Exception {
 		Node left = term();
-
 		Token op;
 		while((op = this.matchAndRemove(TokenType.PLUS)) != null || (op = this.matchAndRemove(TokenType.MINUS)) != null) {
 			if(op.getTokenType() == TokenType.PLUS) {
@@ -485,9 +546,7 @@ public class Parser {
 				left = new MathOpNode('-', left, term());
 			}
 		}
-		
 		Token bo;
-		
 		if((bo = this.matchAndRemove(TokenType.GREATER)) != null || (bo = this.matchAndRemove(TokenType.LESS)) != null ||
 				(bo = this.matchAndRemove(TokenType.GreaterEqual)) != null || (bo = this.matchAndRemove(TokenType.LessEqual)) != null ||
 				(bo = this.matchAndRemove(TokenType.EQUAL)) != null || (bo = this.matchAndRemove(TokenType.NotEqual)) != null) {
@@ -514,7 +573,6 @@ public class Parser {
 	
 	private Node term() throws Exception {
 		Node left = factor();
-		
 		Token op;
 		while((op = this.matchAndRemove(TokenType.TIMES)) != null || (op = this.matchAndRemove(TokenType.DIVIDE)) != null
 				|| (op = this.matchAndRemove(TokenType.MOD)) != null) {
@@ -525,16 +583,12 @@ public class Parser {
 			}else if(op.getTokenType() == TokenType.MOD){
 				left = new MathOpNode('%', left, factor());
 			}
-		}
-		
+		}	
 		return left;
-		
 	}
 	
 	private Node factor() throws Exception {
-		
-		Token token;
-		
+		Token token;		
 		// evaluate whether the factor is a number first, sequence for evaluating number or variable doesn't matter
 		if((token = this.matchAndRemove(TokenType.NUMBER)) != null) {
 			if (token.getValue().contains(".")) {
@@ -564,13 +618,10 @@ public class Parser {
 		}
 		// if neither it may be a nested expression
 		else if(this.matchAndRemove(TokenType.LeftParenthesis) != null) {
-			
 			Node expression = expression(false);
-			
 			if(expression == null) {
 				throw new Exception("Expression should follow after a right parenthesis");
 			}
-			
 			if(this.matchAndRemove(TokenType.RightParenthesis) != null) {
 				return expression;
 			}else {
@@ -580,5 +631,4 @@ public class Parser {
 			throw new Exception("Factor should be either number, variable or expression nested in parenthesises");
 		}
 	}
-	
 }
